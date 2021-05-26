@@ -15,12 +15,12 @@ all_nodes  = int16([1:Graph_size(1)]);
 
 % Электромобили
 
-N = 1000;
+N = 1;
 
 EV_arr = {};
 
 for i = 1 : N
-    EV_arr{i} = Night_Driver(50,G,all_nodes);
+    EV_arr{i} = Driver(50,G,all_nodes);
     EV_arr{i}.x_coord = test_x(EV_arr{i}.from_Node);
     EV_arr{i}.y_coord = test_y(EV_arr{i}.from_Node);
 end
@@ -44,7 +44,7 @@ for i=1:N
     y_vect(i) = EV_arr{i}.y_coord;
 end
 
-h = plot(x_vect, y_vect , 'ro','MarkerSize',2);
+h = plot(x_vect, y_vect , 'ro','MarkerSize',5);
 
 power = zeros(length(time)-1,1);
 power(2:end) = NaN;
@@ -79,7 +79,7 @@ for i = 1:length(time)
      end
 %       x_target2 = test_x(EV2.to_Node);
 %       y_target2 = test_y(EV2.to_Node); 
-     
+     EV_arr{1}
      for s = 1:N
         delta_p(s) = EV_arr{s}.SOC - SOC_prev(s);
         if(delta_p(s) < 0)

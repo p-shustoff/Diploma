@@ -17,16 +17,18 @@ classdef Driver < EV
         function obj = set_state(obj,time)
              if(time < obj.departures(1) || (time >= obj.departures(2) &&  obj.from_Node == obj.home_Node))
                 obj.state = "home";
-             else
-                obj.state = "driving";
              elseif (time >= obj.departures(2) &&  obj.from_Node ~= obj.home_Node)
                 obj.state = "driving_home";
+             else
+                if (obj.state ~= "charging_st")
+                    obj.state = "driving";
+                end
              end
         end
         
         function obj = move_and_charge(obj,x_target,y_target,Graph)
             step = 0.002;
-            if (obj.state == "driving" || obj.state = "driving_home")
+            if (obj.state == "driving" || obj.state == "driving_home")
                 step = 0.002;
                 old_x = obj.x_coord;
                 old_y = obj.y_coord;
@@ -39,7 +41,11 @@ classdef Driver < EV
                         toNode = obj.to_Node;
                         obj.from_Node = toNode;
                         obj.trajectory = shortestpath(Graph,toNode,obj.home_Node);
-                        obj.to_Node = obj.trajectory(2);
+                        if (length(obj.trajectory) > 1)
+                            obj.to_Node = obj.trajectory(2);
+                        end
+                        obj.x_coord = x_target;
+                        obj.y_coord = y_target;
                     else
                         toNode = obj.to_Node;
                         neighbours = neighbors(Graph,toNode);
