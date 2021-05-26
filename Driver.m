@@ -2,6 +2,9 @@ classdef Driver < EV
     properties
         home_Node
         trajectory
+        Station_pos
+        in = 0;
+        
     end
     methods
         function obj = Driver(mean_V, Graph, all_nodes)
@@ -20,15 +23,15 @@ classdef Driver < EV
              elseif (time >= obj.departures(2) &&  obj.from_Node ~= obj.home_Node)
                 obj.state = "driving_home";
              else
-                if (obj.state ~= "charging_st")
+                if (xor((startsWith(obj.state,"driving_")), (obj.state ~= "charging_st")))
                     obj.state = "driving";
                 end
              end
         end
         
-        function obj = move_and_charge(obj,x_target,y_target,Graph)
+        function [obj,Station_massive] = move_and_charge(obj,x_target,y_target,Graph, station_Nodes, Station_massive)
             step = 0.002;
-            if (obj.state == "driving" || obj.state == "driving_home")
+            if (obj.state == "driving" || startsWith(obj.state,"driving_"))
                 step = 0.002;
                 old_x = obj.x_coord;
                 old_y = obj.y_coord;
@@ -37,15 +40,22 @@ classdef Driver < EV
                 dy_angle = y_target - old_y;
                 cond = abs(sqrt((dx_angle)^2 + (dy_angle)^2));
                 if (cond <= 0.07)
-                    if (obj.state == "driving_home")
-                        toNode = obj.to_Node;
-                        obj.from_Node = toNode;
-                        obj.trajectory = shortestpath(Graph,toNode,obj.home_Node);
-                        if (length(obj.trajectory) > 1)
-                            obj.to_Node = obj.trajectory(2);
+                    if (startsWith(obj.state,"driving_"))
+                        if (obj.state == "driving_home")
+                            trajectory = shortestpath(Graph, obj.to_Node,obj.home_Node);
+                            obj = drive_to_trajectory(obj,trajectory,x_target,y_target,"home");
+                        elseif (obj.state == "driving_to_station")
+                            distances = [];
+                            for p = 1:length(station_Nodes)
+                                [~,d] = shortestpath(Graph,obj.to_Node,station_Nodes(p));
+                                distances(p) = d;
+                            end
+                            mindist = min(distances);
+                            min_index = find(distances == mindist);
+                            obj.Station_pos = min_index;
+                            trajectory = shortestpath(Graph,obj.to_Node,station_Nodes(min_index));
+                            obj = drive_to_trajectory(obj,trajectory,x_target,y_target,"charging_st");
                         end
-                        obj.x_coord = x_target;
-                        obj.y_coord = y_target;
                     else
                         toNode = obj.to_Node;
                         neighbours = neighbors(Graph,toNode);
@@ -78,7 +88,7 @@ classdef Driver < EV
                     obj.SOC = old_SOC - step * 10;
                     tmp_SOC = obj.SOC;
                     if (obj.SOC < 15)
-                        obj.state = "charging_st";
+                        obj.state = "driving_to_station";
                     end
                 end
             elseif (obj.state == "home")
@@ -89,22 +99,46 @@ classdef Driver < EV
                 obj.y_coord = old_y;
                 obj.SOC = old_SOC + step * 3;
             elseif (obj.state == "charging_st")
+                if (obj.in == 0)
+                    [Station_massive{obj.Station_pos},state]= Station_massive{obj.Station_pos}.take_charger;
+                    if (state == 1)
+                        obj.in = 1;
+                    elseif(state == 0);
+                        obj.in = 2;
+                    end
+                end
                 old_SOC = obj.SOC;
                 old_x = obj.x_coord;
                 old_y = obj.y_coord;
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
-                obj.SOC = old_SOC + step * 2;
-            elseif (obj.state == "office")
-                old_SOC = obj.SOC;
-                old_x = obj.x_coord;
-                old_y = obj.y_coord;
-                obj.x_coord = old_x;
-                obj.y_coord = old_y;
-                obj.SOC = old_SOC + step * 1;
+                if (obj.in == 1)
+                    obj.SOC = old_SOC + step * 2;
+                elseif (obj.in == 2)
+                    obj.in = 0;
+                end
+                if (obj.SOC > 60)
+                    obj.state = "medium";
+                    Station_massive{obj.Station_pos} = Station_massive{obj.Station_pos}.set_free;
+                    obj.in = 0;
+                end
             else
                 error("NO WAY!")
             end
         end 
+        
+        function obj = drive_to_trajectory(obj,trajectory,x_target,y_target,next_state)
+            toNode = obj.to_Node;
+            obj.from_Node = toNode;
+            obj.trajectory = trajectory;
+            if (length(obj.trajectory) > 1)
+                obj.to_Node = obj.trajectory(2);
+            else
+                obj.state = next_state;
+            end
+            obj.x_coord = x_target;
+            obj.y_coord = y_target;
+        end
+
     end
 end

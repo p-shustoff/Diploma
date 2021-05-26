@@ -13,6 +13,20 @@ hold on
 Graph_size = int16(size(G.Nodes));
 all_nodes  = int16([1:Graph_size(1)]);
 
+% Зарядные станции, узлы
+
+Station1 = Charging_Station(449,10,8);
+Station2 = Charging_Station(548,10,8);
+Station3 = Charging_Station(375,10,8);
+Station4 = Charging_Station(327,10,8);
+Station5 = Charging_Station(513,10,8);
+Station6 = Charging_Station(548,10,8);
+Station7 = Charging_Station(303,10,8);
+
+station_Nodes = [449,548,375,327,513,438,303];
+
+station_massive = {Station1, Station2, Station3, Station4, Station5, Station6, Station7};
+
 % Электромобили
 
 N = 1;
@@ -25,6 +39,8 @@ for i = 1 : N
     EV_arr{i}.y_coord = test_y(EV_arr{i}.from_Node);
 end
 
+EV_arr{1}.SOC = 10;
+EV_arr{1}.departures = [3 5];
 % EV1 = Night_Driver(50,G,all_nodes);
 % EV1 = EV(50,G,"driver");
 % EV2 = EV(50,G,"office");
@@ -75,11 +91,13 @@ for i = 1:length(time)
      for k = 1:N   
        x_target = test_x(EV_arr{k}.to_Node);
        y_target = test_y(EV_arr{k}.to_Node);
-       EV_arr{k} = EV_arr{k}.move_and_charge(x_target,y_target,G);
+       [EV_arr{k},station_massive] = EV_arr{k}.move_and_charge(x_target,y_target,G,station_Nodes,station_massive);
      end
 %       x_target2 = test_x(EV2.to_Node);
 %       y_target2 = test_y(EV2.to_Node); 
      EV_arr{1}
+     ind = EV_arr{1}.Station_pos;
+     station_massive{ind}
      for s = 1:N
         delta_p(s) = EV_arr{s}.SOC - SOC_prev(s);
         if(delta_p(s) < 0)
