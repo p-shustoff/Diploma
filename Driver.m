@@ -1,14 +1,14 @@
 classdef Driver < EV
     properties
-        home_Node
         trajectory
         Station_pos
         in = 0;
+        wasted_time = 0;
         
     end
     methods
-        function obj = Driver(mean_V, Graph, all_nodes)
-            obj@EV(mean_V, Graph, all_nodes)
+        function obj = Driver(mean_V, Graph, all_nodes, SOC_max)
+            obj@EV(mean_V, Graph, all_nodes, SOC_max)
             obj.departures = [normrnd(9, 2/3) normrnd(18, 2/3)];
             obj.state = "home";
             obj.from_Node = obj.home_Node;
@@ -18,9 +18,9 @@ classdef Driver < EV
         end
         
         function obj = set_state(obj,time)
-             if(time < obj.departures(1) || (time >= obj.departures(2) &&  obj.from_Node == obj.home_Node))
+             if(time < obj.departures(1) || (time >= obj.departures(2) &&  obj.from_Node == obj.home_Node && obj.wasted_time < 1e-10))
                 obj.state = "home";
-             elseif (time >= obj.departures(2) &&  obj.from_Node ~= obj.home_Node)
+             elseif (time >= obj.departures(2) &&  obj.from_Node ~= obj.home_Node && obj.state ~="charging_st" && obj.wasted_time < 1e-10)
                 obj.state = "driving_home";
              else
                 if (xor((startsWith(obj.state,"driving_")), (obj.state ~= "charging_st")))
@@ -55,6 +55,7 @@ classdef Driver < EV
                             obj.Station_pos = min_index;
                             trajectory = shortestpath(Graph,obj.to_Node,station_Nodes(min_index));
                             obj = drive_to_trajectory(obj,trajectory,x_target,y_target,"charging_st");
+                            obj.wasted_time = obj.wasted_time + step;
                         end
                     else
                         toNode = obj.to_Node;
@@ -62,6 +63,9 @@ classdef Driver < EV
                         index = find(neighbours == obj.from_Node);
                         if (length(neighbours) > 1)
                             neighbours(index) = [];
+                        end
+                        if (obj.wasted_time > 0)
+                            obj.wasted_time = obj.wasted_time - step;
                         end
                         index = randi([1, length(neighbours)],1);
                         obj.to_Node = neighbours(index);
@@ -83,11 +87,16 @@ classdef Driver < EV
                         V_y = sigy * sqrt((obj.V^2)/((otnosh^2)+1));
                         V_x = sigx * abs(otnosh * V_y);
                     end
+                    if (obj.state == "driving" && obj.wasted_time > 0)
+                        obj.wasted_time = obj.wasted_time - step;
+                    elseif (obj.state == "driving_to_station")
+                        obj.wasted_time = obj.wasted_time + step;
+                    end
                     obj.x_coord = old_x + step*V_x;
                     obj.y_coord = old_y + step*V_y;
-                    obj.SOC = old_SOC - step * 10;
+                    obj.SOC = old_SOC - (obj.SOC_max * obj.V / 400) * step;
                     tmp_SOC = obj.SOC;
-                    if (obj.SOC < 15)
+                    if (obj.SOC < 4.6833 && obj.state ~= "driving_home")
                         obj.state = "driving_to_station";
                     end
                 end
@@ -97,8 +106,11 @@ classdef Driver < EV
                 old_y = obj.y_coord;
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
-                obj.SOC = old_SOC + step * 3;
+                if (obj.SOC < obj.SOC_max)
+                    obj.SOC = old_SOC + step * 1.5;
+                end
             elseif (obj.state == "charging_st")
+                obj.wasted_time = obj.wasted_time + step;
                 if (obj.in == 0)
                     [Station_massive{obj.Station_pos},state]= Station_massive{obj.Station_pos}.take_charger;
                     if (state == 1)
@@ -113,14 +125,17 @@ classdef Driver < EV
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
                 if (obj.in == 1)
-                    obj.SOC = old_SOC + step * 2;
+                    obj.SOC = old_SOC + step * Station_massive{obj.Station_pos}.Power;
                 elseif (obj.in == 2)
                     obj.in = 0;
                 end
-                if (obj.SOC > 60)
+                if (obj.SOC > 0.60 * obj.SOC_max)
                     obj.state = "medium";
                     Station_massive{obj.Station_pos} = Station_massive{obj.Station_pos}.set_free;
                     obj.in = 0;
+                    if (isa(obj,'Night_Driver'))
+                        obj.departures = [obj.departures(1)+obj.wasted_time obj.departures(2)];
+                    end
                 end
             else
                 error("NO WAY!")
