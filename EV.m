@@ -6,19 +6,22 @@ classdef EV
         V
         from_Node
         to_Node
+        home_Node
         departures
         SOC
+        SOC_max
         state
     end
       
     methods
         
-        function obj = EV(mean_V, Graph, all_nodes)
+        function obj = EV(mean_V, Graph, all_nodes,SOC_max)
             G_size = size(Graph.Nodes);
             index_home = randi([1, length(all_nodes)],1);
             obj.home_Node = all_nodes(index_home);
             obj.V = normrnd(mean_V, 10/3);
-            obj.SOC = randinter(50,100);
+            obj.SOC_max = SOC_max;
+            obj.SOC = randinter(0.5 * SOC_max,SOC_max);
         end
             
         function obj = move_and_charge(obj,x_target,y_target,Graph)
@@ -59,7 +62,8 @@ classdef EV
                     end
                     obj.x_coord = old_x + step*V_x;
                     obj.y_coord = old_y + step*V_y;
-                    obj.SOC = old_SOC - step * 10;
+                    k = obj.SOC_max * obj.V / 200;
+                    obj.SOC = old_SOC - obj.SOC_max * obj.V / 200;
                     tmp_SOC = obj.SOC;
                     if (obj.SOC < 15)
                         obj.state = "charging_st";
