@@ -4,6 +4,7 @@ clc
 clf
 clear all
 load('graph.mat');
+load('traffic.mat');
 time = single([0:0.002:24]);
 
 % Задание города в виде графа 
@@ -33,32 +34,49 @@ station_massive = {Station1, Station2, Station3, Station4, Station5, Station6, S
 
 % Электромобили
 
-N_dr = 100;
-% N_ndr = 0.1 * N_dr;
+N_tot = 2000;
+
+N_off = 0.5 * N_tot;
+
+N_dr = 0.4 * N_tot;
+
+N_ndr = 0.1 * N_dr;
 
 EV_arr = {};
-% EV_arr2 = {};
+EV_arr2 = {};
+EV_arr3 = {};
 
-for i = 1 : N_dr
+for i = 1 : N_off
     EV_arr{i} = Office_Worker(50,G,all_nodes,24);
     EV_arr{i}.x_coord = test_x(EV_arr{i}.from_Node);
     EV_arr{i}.y_coord = test_y(EV_arr{i}.from_Node);
 end
 
-% for i = 1 : N_ndr
-%     EV_arr2{i} = Night_Driver(50,G,all_nodes,48);
-%     EV_arr2{i}.x_coord = test_x(EV_arr2{i}.from_Node);
-%     EV_arr2{i}.y_coord = test_y(EV_arr2{i}.from_Node);
-% end
+for i = 1 : N_dr
+    EV_arr2{i} = Driver(50,G,all_nodes,48);
+    EV_arr2{i}.x_coord = test_x(EV_arr2{i}.from_Node);
+    EV_arr2{i}.y_coord = test_y(EV_arr2{i}.from_Node);
+end
 
-% for i = 1:N_ndr
-%    EV_arr(N_dr+i) = EV_arr2(i); 
-% end  
+for i = 1 : N_ndr
+    EV_arr3{i} = Night_Driver(50,G,all_nodes,48);
+    EV_arr3{i}.x_coord = test_x(EV_arr3{i}.from_Node);
+    EV_arr3{i}.y_coord = test_y(EV_arr3{i}.from_Node);
+end
 
-% EV_arr{1}.departures = [12 3];
-% EV_arr{1}.SOC = 10;
 
-% EV_arr = EV_arr(randperm(numel(EV_arr)));
+ for i = 1:N_dr
+    EV_arr(N_off+i) = EV_arr2(i); 
+ end  
+ 
+  for j = 1:N_ndr
+    EV_arr(N_off+N_dr+j) = EV_arr3(j); 
+ end  
+
+EV_arr{1}.departures = [12 3];
+EV_arr{1}.SOC = 10;
+
+EV_arr = EV_arr(randperm(numel(EV_arr)));
 
 N = numel(EV_arr);
 
@@ -84,8 +102,11 @@ velocity_over_time = [];
 
 for i = 1:length(time)
     
+     traffic_point = traffic(i);
+    
      for j = 1:N
        EV_arr{j} = EV_arr{j}.set_state(time(i));
+       EV_arr{j} = EV_arr{j}.traffic_speed(traffic_point);
      end
     
      if (startsWith(EV_arr{1}.state, "driving"))
@@ -101,10 +122,10 @@ for i = 1:length(time)
      for k = 1:N   
        x_target = test_x(EV_arr{k}.to_Node);
        y_target = test_y(EV_arr{k}.to_Node);
-       [EV_arr{k},station_massive] = EV_arr{k}.move_and_charge(x_target,y_target,G,station_Nodes,station_massive);
+       [EV_arr{k},station_massive] = EV_arr{k}.move_and_charge(x_target,y_target,G,station_Nodes,station_massive,time(i));
      end
      
-%      EV_arr{1}
+%        EV_arr{1}
      
      for s = 1:N
         delta_p(s) = EV_arr{s}.SOC - SOC_prev(s);

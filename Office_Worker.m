@@ -3,6 +3,8 @@ classdef Office_Worker < EV
         work_Node
         trajectory
         in = 0;
+        in_home_office = 0;
+        start_charging
     end
     
     methods
@@ -28,12 +30,13 @@ classdef Office_Worker < EV
                 obj.state = "driving_to_office";
             elseif (time >= obj.departures(2) && obj.from_Node ~= obj.home_Node)
                 obj.state = "driving_home";
+                obj.in_home_office = 0;
             else
                 obj.state = "office";
             end
         end
         
-        function [obj,Station_massive] = move_and_charge(obj,x_target,y_target,Graph, station_Nodes, Station_massive)
+        function [obj,Station_massive] = move_and_charge(obj,x_target,y_target,Graph, station_Nodes, Station_massive, curr_time)
             step = 0.002;
             if (startsWith(obj.state,"driving_"))
                 step = 0.002;
@@ -93,7 +96,12 @@ classdef Office_Worker < EV
                 old_y = obj.y_coord;
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
-                if (obj.SOC < obj.SOC_max)
+%                 if (obj.in_home_office == 0 && (curr_time > obj.departures(2)))
+%                    prob = betarnd(1.1,3);
+%                    obj.start_charging = (24 - curr_time) * prob + curr_time;
+%                    obj.in_home_office = 1;
+%                 end
+                if ((obj.SOC < obj.SOC_max)) % && curr_time < obj.departures(1)) || ((obj.SOC < obj.SOC_max && curr_time > obj.departures(2)) && (curr_time > obj.start_charging)))
                     obj.SOC = old_SOC + step * 1.5;
                 end
             elseif (obj.state == "charging_st")
@@ -101,7 +109,7 @@ classdef Office_Worker < EV
                     [Station_massive{obj.Station_pos},state]= Station_massive{obj.Station_pos}.take_charger;
                     if (state == 1)
                         obj.in = 1;
-                    elseif(state == 0);
+                    elseif(state == 0)
                         obj.in = 2;
                     end
                 end
@@ -126,7 +134,17 @@ classdef Office_Worker < EV
                 old_y = obj.y_coord;
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
-                if (obj.SOC < obj.SOC_max)
+                if (obj.in_home_office == 0)
+                   req_time = (0.75 * obj.SOC_max - obj.SOC) / 3;
+                   max_start = obj.departures(2) - req_time;
+                   if (max_start > curr_time)
+                       obj.start_charging = randinter(curr_time, max_start);
+                   else
+                        obj.start_charging = curr_time;
+                   end
+                   obj.in_home_office = 1;
+                end 
+                if (obj.SOC < obj.SOC_max && curr_time >= obj.start_charging)
                     obj.SOC = old_SOC + step * 3;
                 end
             else
