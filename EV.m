@@ -3,6 +3,7 @@ classdef EV
     properties
         x_coord
         y_coord
+        V_orig
         V
         from_Node
         to_Node
@@ -19,7 +20,7 @@ classdef EV
             G_size = size(Graph.Nodes);
             index_home = randi([1, length(all_nodes)],1);
             obj.home_Node = all_nodes(index_home);
-            obj.V = normrnd(mean_V, 10/3);
+            obj.V_orig = normrnd(mean_V, 10/3);
             obj.SOC_max = SOC_max;
             obj.SOC = randinter(0.5 * SOC_max,SOC_max);
         end
@@ -93,6 +94,10 @@ classdef EV
             else
                 error("NO WAY!")
             end
+        end
+        
+        function obj = traffic_speed(obj,traffic_point)
+            obj.V = obj.V_orig / (0.16 * traffic_point  + 1);
         end
     end
 end

@@ -29,7 +29,7 @@ classdef Driver < EV
              end
         end
         
-        function [obj,Station_massive] = move_and_charge(obj,x_target,y_target,Graph, station_Nodes, Station_massive)
+        function [obj,Station_massive] = move_and_charge(obj,x_target,y_target,Graph, station_Nodes, Station_massive,curr_time)
             step = 0.002;
             if (obj.state == "driving" || startsWith(obj.state,"driving_"))
                 step = 0.002;
