@@ -199,6 +199,7 @@ if (mean_collect == 1)
     v = 1;
     c = 1;
     y = 1;
+    z = 1;
     
     for z = 1:length(EV_arr)
        if ( isa(EV_arr{z},'Driver') && (1 - isa(EV_arr{z},'Night_Driver')))
