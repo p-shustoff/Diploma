@@ -102,7 +102,7 @@ classdef Office_Worker < EV
 %                    obj.in_home_office = 1;
 %                 end
                 if ((obj.SOC < obj.SOC_max)) % && curr_time < obj.departures(1)) || ((obj.SOC < obj.SOC_max && curr_time > obj.departures(2)) && (curr_time > obj.start_charging)))
-                    obj.SOC = old_SOC + step * 1.5;
+                    obj.SOC = old_SOC + step * 3.5;
                 end
             elseif (obj.state == "charging_st")
                 if (obj.in == 0)
@@ -145,7 +145,7 @@ classdef Office_Worker < EV
                    obj.in_home_office = 1;
                 end 
                 if (obj.SOC < obj.SOC_max && curr_time >= obj.start_charging)
-                    obj.SOC = old_SOC + step * 3;
+                    obj.SOC = old_SOC + step * 3.5;
                 end
             else
                 error("NO WAY!")

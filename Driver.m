@@ -107,7 +107,7 @@ classdef Driver < EV
                 obj.x_coord = old_x;
                 obj.y_coord = old_y;
                 if (obj.SOC < obj.SOC_max)
-                    obj.SOC = old_SOC + step * 1.5;
+                    obj.SOC = old_SOC + step * 3.5;
                 end
             elseif (obj.state == "charging_st")
                 obj.wasted_time = obj.wasted_time + step;
