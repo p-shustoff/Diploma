@@ -10,13 +10,21 @@ load('graph.mat');
 load('traffic.mat');
 time = single([0:0.002:24]);
 
+% Подргузка графика нагрузки
+
+load('residential_load.mat');
+subplot(2,2,4)
+loadprof = plot(time, P_n);
+
 % Задание города в виде графа 
 
 f = figure(1);
 f.Position = [100 100 600 700];
-subplot(2,1,1)
+subplot(2,2,[1 3])
 h = plot(G, 'XData', test_x, 'YData', test_y);
 title("Модель движения электромобилей")
+xlabel("x, км")
+ylabel("y, км")
 hold on
 Graph_size = int16(size(G.Nodes));
 all_nodes  = int16([1:Graph_size(1)]);
@@ -128,11 +136,14 @@ h = plot(x_vect, y_vect , 'ro','MarkerSize',2);
 
 power = zeros(length(time)-1,1);
 power(2:end) = NaN;
-subplot(2,1,2)
+subplot(2,2,2)
 powerpl = plot(time(1:end-1),power);
 axis([0 24 0 5*N]);
-
+title("Потребляемая из сети мощность")
+xlabel("t, ч")
+ylabel("P, кВт*ч")
 velocity_over_time = [];
+
 
 % Главный цикл анимации
 
@@ -183,16 +194,21 @@ for i = 1:length(time)
       legend("t = " + curr_time);
       set(h, 'XData', x_vect, 'YData', y_vect);
       set(powerpl,'XData', time(1:end-1), 'YData', power);
-%       pause(0.005)
+      pause(0.005)
 end
+
+subplot(2,2,4)
+hold on
+total_load = plot(time(1:end-1), P_n(1:end-1) + (power * 10e-3)');
+
 
 figure(3)
 
 plot(time, EV_arr{1}.V * velocity_over_time) 
 
-if (mean_collect == 1)
+if (mean_collect == 0)
     driver_SOC = [];
-    nightdriver_SOC(v) = [];
+    nightdriver_SOC = [];
     office_SOC = [];
     home_SOC = [];
     b = 1;

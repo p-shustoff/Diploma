@@ -1,16 +1,19 @@
 classdef Office_Worker < EV
     properties
         work_Node
+        Station_pos
         trajectory
         in = 0;
         in_home_office = 0;
         start_charging
+        will_charge
     end
     
     methods
         function obj = Office_Worker(mean_V, Graph, all_nodes,SOC_max)
             obj@EV(mean_V, Graph, all_nodes,SOC_max)
             obj.departures = [normrnd(7, 1/3) normrnd(17, 1/3)];
+            obj.will_charge = randi([0 1],1);
             obj.state = "home";
             index_home = find(all_nodes == obj.home_Node);
             all_nodes(index_home) = [];
@@ -144,7 +147,7 @@ classdef Office_Worker < EV
                    end
                    obj.in_home_office = 1;
                 end 
-                if (obj.SOC < obj.SOC_max && curr_time >= obj.start_charging)
+                if (obj.SOC < obj.SOC_max && curr_time >= obj.start_charging && obj.will_charge == 1)
                     obj.SOC = old_SOC + step * 3.5;
                 end
             else
