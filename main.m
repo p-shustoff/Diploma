@@ -5,7 +5,7 @@ mean_collect = 0;
 
 % Подготовка рабочей области и подгрузка графа
 
-load('mean_data.mat');
+% load('mean_data.mat');
 load('graph.mat');
 load('traffic.mat');
 time = single([0:0.002:24]);
@@ -31,17 +31,28 @@ all_nodes  = int16([1:Graph_size(1)]);
 
 % Зарядные станции, узлы зарядных станций
 
-Station1 = Charging_Station(449,10,50);
-Station2 = Charging_Station(548,10,50);
-Station3 = Charging_Station(375,10,50);
-Station4 = Charging_Station(327,10,50);
-Station5 = Charging_Station(513,10,50);
-Station6 = Charging_Station(548,10,50);
-Station7 = Charging_Station(303,10,50);
+station_Nodes = [262 345 353 222 231 230 400 399 28 ...
+    371 375 470 423 424 440 471 86 302 487 125 313 150 ...
+    152 148 523 519 198 185 174 499 499 500 528 515 549 ...
+    548 520 514 514 527];
 
-station_Nodes = [449,548,375,327,513,438,303];
+base = station_Nodes;
 
-station_massive = {Station1, Station2, Station3, Station4, Station5, Station6, Station7};
+station_massive = cell(1,length(station_Nodes));
+
+for stations = 1:length(station_Nodes)
+    rand_ind = randi([1 length(base)],1);
+    st_node = base(rand_ind);
+    station_massive{stations} = Charging_Station(st_node,3,50);
+    base(rand_ind) = [];
+end
+
+% for k = 1:length(station_Nodes)
+%     x_st(k) = test_x(station_Nodes(k));
+%     y_st(k) = test_y(station_Nodes(k));
+% end
+% 
+% plot(x_st,y_st,'gs');
 
 % Электромобили
 
@@ -55,15 +66,21 @@ N_ndr = 0.1 * N_dr;
 
 N_home = 0.1 * N_tot; 
 
-EV_arr = {};
+EV_arr = cell(1,N_off);
 % EV_arr2 = {};
 % EV_arr3 = {};
 % EV_arr4 = {};
 
 for i = 1 : N_off
-    EV_arr{i} = Office_Worker(50,G,all_nodes,24);
+    EV_arr{i} = Driver(50,G,all_nodes,48);
     EV_arr{i}.x_coord = test_x(EV_arr{i}.from_Node);
     EV_arr{i}.y_coord = test_y(EV_arr{i}.from_Node);
+end
+
+load('driver_mean.mat','driver_SOC');
+
+for z = 1:length(EV_arr)
+    EV_arr{z}.SOC = driver_SOC(z);
 end
 
 % for i = 1 : N_dr
@@ -142,8 +159,9 @@ axis([0 24 0 5*N]);
 title("Потребляемая из сети мощность")
 xlabel("t, ч")
 ylabel("P, кВт*ч")
-velocity_over_time = [];
-
+velocity_over_time = zeros(1, length(time));
+SOC_prev = zeros(1,N);
+delta_p = zeros(1,N);
 
 % Главный цикл анимации
 

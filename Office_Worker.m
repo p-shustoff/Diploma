@@ -55,7 +55,7 @@ classdef Office_Worker < EV
                         trajectory = shortestpath(Graph, obj.to_Node,obj.home_Node);
                         obj = drive_to_trajectory(obj,trajectory,x_target,y_target,"home");
                       elseif (obj.state == "driving_to_station")
-                        distances = [];
+                        distances = zeros(1,length(station_Nodes));
                         for p = 1:length(station_Nodes)
                             [~,d] = shortestpath(Graph,obj.to_Node,station_Nodes(p));
                             distances(p) = d;
