@@ -1,7 +1,7 @@
 clc
 clf
 clear all
-mean_collect = 1;
+mean_collect = 0;
 
 % Подготовка рабочей области и подгрузка графа
 
@@ -45,7 +45,7 @@ station_massive = {Station1, Station2, Station3, Station4, Station5, Station6, S
 
 % Электромобили
 
-N_tot = 5000;
+N_tot = 10000;
 
 N_off = 0.5 * N_tot;
 
@@ -56,46 +56,46 @@ N_ndr = 0.1 * N_dr;
 N_home = 0.1 * N_tot; 
 
 EV_arr = {};
-EV_arr2 = {};
-EV_arr3 = {};
-EV_arr4 = {};
+% EV_arr2 = {};
+% EV_arr3 = {};
+% EV_arr4 = {};
 
 for i = 1 : N_off
-    EV_arr{i} = Home_Worker(50,G,all_nodes,24);
+    EV_arr{i} = Office_Worker(50,G,all_nodes,24);
     EV_arr{i}.x_coord = test_x(EV_arr{i}.from_Node);
     EV_arr{i}.y_coord = test_y(EV_arr{i}.from_Node);
 end
 
-for i = 1 : N_dr
-    EV_arr2{i} = Driver(50,G,all_nodes,48);
-    EV_arr2{i}.x_coord = test_x(EV_arr2{i}.from_Node);
-    EV_arr2{i}.y_coord = test_y(EV_arr2{i}.from_Node);
-end
-
-for i = 1 : N_ndr
-    EV_arr3{i} = Night_Driver(50,G,all_nodes,48);
-    EV_arr3{i}.x_coord = test_x(EV_arr3{i}.from_Node);
-    EV_arr3{i}.y_coord = test_y(EV_arr3{i}.from_Node);
-end
-
-for i = 1 : N_home
-    EV_arr4{i} = Office_Worker(50,G,all_nodes,48);
-    EV_arr4{i}.x_coord = test_x(EV_arr4{i}.from_Node);
-    EV_arr4{i}.y_coord = test_y(EV_arr4{i}.from_Node);
-end
-
-
- for i = 1:N_dr
-    EV_arr(N_off+i) = EV_arr2(i); 
- end  
- 
- for j = 1:N_ndr
-    EV_arr(N_off+N_dr+j) = EV_arr3(j); 
- end  
- 
- for k = 1:N_home
-     EV_arr(N_off+N_dr+N_ndr+k) = EV_arr4(k);
- end
+% for i = 1 : N_dr
+%     EV_arr2{i} = Driver(50,G,all_nodes,48);
+%     EV_arr2{i}.x_coord = test_x(EV_arr2{i}.from_Node);
+%     EV_arr2{i}.y_coord = test_y(EV_arr2{i}.from_Node);
+% end
+% 
+% for i = 1 : N_ndr
+%     EV_arr3{i} = Night_Driver(50,G,all_nodes,48);
+%     EV_arr3{i}.x_coord = test_x(EV_arr3{i}.from_Node);
+%     EV_arr3{i}.y_coord = test_y(EV_arr3{i}.from_Node);
+% end
+% 
+% for i = 1 : N_home
+%     EV_arr4{i} = Office_Worker(50,G,all_nodes,48);
+%     EV_arr4{i}.x_coord = test_x(EV_arr4{i}.from_Node);
+%     EV_arr4{i}.y_coord = test_y(EV_arr4{i}.from_Node);
+% end
+% 
+% 
+%  for i = 1:N_dr
+%     EV_arr(N_off+i) = EV_arr2(i); 
+%  end  
+%  
+%  for j = 1:N_ndr
+%     EV_arr(N_off+N_dr+j) = EV_arr3(j); 
+%  end  
+%  
+%  for k = 1:N_home
+%      EV_arr(N_off+N_dr+N_ndr+k) = EV_arr4(k);
+%  end
 
 b = 1;
 v = 1;
@@ -120,7 +120,7 @@ if ( mean_collect == 1)
     end
 end
 
-EV_arr = EV_arr(randperm(numel(EV_arr)));
+% EV_arr = EV_arr(randperm(numel(EV_arr)));
 
 N = numel(EV_arr);
 
@@ -156,10 +156,18 @@ for i = 1:length(time)
        EV_arr{j} = EV_arr{j}.traffic_speed(traffic_point);
      end
     
-     if (startsWith(EV_arr{1}.state, "driving"))
-         velocity_over_time(i) = 1;
-     else
-         velocity_over_time(i) = 0;
+     suV(i) = 0;
+     
+     for s = 1:N
+                
+         if (startsWith(EV_arr{s}.state, "driving"))
+             velocity_over_time(s) = EV_arr{s}.V;
+         else
+             velocity_over_time(s) = 0;
+         end
+         
+         suV(i) = suV(i) + velocity_over_time(s);
+         
      end
 
      for o = 1:N
@@ -204,9 +212,9 @@ total_load = plot(time(1:end-1), P_n(1:end-1) + (power * 10e-3)');
 
 figure(3)
 
-plot(time, EV_arr{1}.V * velocity_over_time) 
+plot(time, suV) 
 
-if (mean_collect == 0)
+if (mean_collect == 1)
     driver_SOC = [];
     nightdriver_SOC = [];
     office_SOC = [];
